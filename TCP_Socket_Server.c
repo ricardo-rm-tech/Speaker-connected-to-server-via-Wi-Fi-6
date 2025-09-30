@@ -10,7 +10,10 @@
 #include "TCP_Socket_server.h"
 
 static volatile bool Server_con = false;
-
+static volatile bool Header_ok= false;
+static size_t Header_len =0;
+static uint8_t Ring[RingSize];
+static char Buffer_Datos[64];
 
 // Notify the user application about TCP socket events.
 uint32_t tcp_cb_server (int32_t socket, netTCP_Event event,
@@ -37,14 +40,21 @@ uint32_t tcp_cb_server (int32_t socket, netTCP_Event event,
 			
     case netTCP_EventEstablished:
       // Connection established
+			Server_con = true;
+			Header_ok = false;
+			Header_len = 0;
       break;
  
     case netTCP_EventClosed:
-      // Connection was properly closed
+			Server_con = false;
+			Header_ok = false;
+			Header_len = 0;
       break;
- 
     case netTCP_EventAborted:
       // Connection is for some reason aborted
+			Server_con = false;
+			Header_ok = false;
+			Header_len = 0;
       break;
  
     case netTCP_EventACK:
@@ -52,13 +62,16 @@ uint32_t tcp_cb_server (int32_t socket, netTCP_Event event,
       break;
  
     case netTCP_EventData:
-      // Data received
-      /* Example
-      if ((buf[0] == 0x01) && (len == 2)) {
-        // Switch LEDs on and off
-        // LED_out (buf[1]);
-      }
-      */
+      if(!Header_ok){
+				for(uint32_t i = 0; i< len && Header_len < sizeof(Buffer_Datos)-1; i++){
+					Buffer_Datos[Header_len++] = buf[i];
+					if(buf[i]== '\n'){
+						Buffer_Datos[Header_len] = 0;
+						Header_ok = parse_header_line(Buffer_Datos);
+					}
+				
+				}
+			}
       break;
   }
   return (0);
@@ -79,3 +92,4 @@ int main (void) {
 }
 */
 //! [code_TCP_Socket_Server]
+
