@@ -9,5 +9,11 @@
 
 int Init_ThDAC(void);
 void ThControlDAC(void *argument);
+void DAC_Conf(void);
+void TIM6_Conf(void);
+
+#define N_samples 2048
+
+uint16_t BUFF_DAC[N_samples];
 
 #endif
